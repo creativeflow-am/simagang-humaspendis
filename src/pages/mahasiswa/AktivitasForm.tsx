@@ -18,7 +18,6 @@ const categories = [
 export default function AktivitasFormMahasiswa() {
   const navigate = useNavigate()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [hours, setHours] = useState('')
   const [category, setCategory] = useState(categories[0])
   const [desc, setDesc] = useState('')
   const [proofType, setProofType] = useState<'link' | 'file'>('link')

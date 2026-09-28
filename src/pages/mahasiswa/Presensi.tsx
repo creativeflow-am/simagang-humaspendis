@@ -44,7 +44,7 @@ export default function PresensiMahasiswa() {
           })
           .catch(() => setAddress('Tidak dapat memuat nama jalan'))
       },
-      (err) => {
+      () => {
         setStatus('error')
         setErrorMsg('Gagal mendapat lokasi. Aktifkan izin GPS Anda.')
       },

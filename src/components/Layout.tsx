@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { useAuth } from '../store/useAuth'
@@ -13,11 +14,10 @@ interface LayoutProps {
 }
 
 export function Layout({ role, title, subtitle, children, actions, showBack }: LayoutProps) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
   useEffect(() => {
     if (role === 'mahasiswa' && !user) {
       navigate('/login')
