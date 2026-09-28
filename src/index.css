@@ -764,9 +764,7 @@ tbody tr:hover td { background: #f8fafc; }
   position: fixed;
   bottom: 0; left: 0; right: 0;
   height: 64px;
-  background: var(--surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface);
   border-top: 1px solid rgba(0,0,0,0.05);
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);
