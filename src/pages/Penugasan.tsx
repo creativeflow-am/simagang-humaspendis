@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { ConfirmModal } from '../components/ConfirmModal'
 
 export default function Penugasan() {
   const [activeTab, setActiveTab] = useState('Approval')
@@ -11,6 +12,7 @@ export default function Penugasan() {
   const [note, setNote] = useState('')
   const [allTasks, setAllTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     const q = query(collection(db, 'aktivitas'))
@@ -89,19 +91,28 @@ export default function Penugasan() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.')) return
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await deleteDoc(doc(db, 'aktivitas', id))
+      await deleteDoc(doc(db, 'aktivitas', deleteId))
       toast.success('Laporan berhasil dihapus')
     } catch (err) {
       console.error(err)
       toast.error('Gagal menghapus laporan')
     }
+    setDeleteId(null)
   }
 
   return (
     <Layout role="admin" title="Approval Tugas" subtitle="Validasi Laporan Kegiatan">
+      <ConfirmModal 
+        isOpen={!!deleteId}
+        title="Hapus Laporan Admin"
+        message="Yakin ingin menghapus laporan ini secara permanen? Tindakan ini tidak dapat dibatalkan."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+        confirmText="Ya, Hapus Permanen"
+      />
       <div className="page-header">
         <div>
           <div className="page-title">Approval Laporan</div>
@@ -212,7 +223,7 @@ export default function Penugasan() {
                   <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit</span>
                   Edit Admin
                 </Link>
-                <button className="btn btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: '#ef4444' }} onClick={() => handleDelete(app.id)}>
+                <button className="btn btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: '#ef4444' }} onClick={() => setDeleteId(app.id)}>
                   <span className="material-symbols-outlined" style={{ fontSize: 14 }}>delete</span>
                   Hapus Admin
                 </button>

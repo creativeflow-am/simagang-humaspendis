@@ -5,6 +5,7 @@ import { useAuth } from '../../store/useAuth'
 import { toast } from 'sonner'
 import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { ConfirmModal } from '../../components/ConfirmModal'
 
 const statusIcon: Record<string, string> = { 'Disetujui': 'task_alt', 'ACC': 'task_alt', 'Menunggu': 'hourglass_empty', 'Direvisi': 'error', 'Ditolak': 'cancel' }
 const statusColor: Record<string, string> = { 'Disetujui': '#10b981', 'ACC': '#10b981', 'Menunggu': '#9ca3af', 'Direvisi': '#f59e0b', 'Ditolak': '#ef4444' }
@@ -14,16 +15,22 @@ export default function AktivitasMahasiswa() {
   const navigate = useNavigate()
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Yakin ingin menghapus laporan ini?')) return
+  const confirmDelete = (id: string) => {
+    setDeleteId(id)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await deleteDoc(doc(db, 'aktivitas', id))
+      await deleteDoc(doc(db, 'aktivitas', deleteId))
       toast.success('Laporan berhasil dihapus')
     } catch (err) {
       console.error(err)
       toast.error('Gagal menghapus laporan')
     }
+    setDeleteId(null)
   }
 
   useEffect(() => {
@@ -71,6 +78,14 @@ export default function AktivitasMahasiswa() {
   }, [user])
   return (
     <Layout role="mahasiswa" title="Aktivitas" subtitle="Logbook & Laporan Tugas">
+      <ConfirmModal 
+        isOpen={!!deleteId}
+        title="Hapus Laporan"
+        message="Yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+        confirmText="Ya, Hapus"
+      />
       <div className="page-header">
         <div>
           <div className="page-title">Aktivitas & Laporan</div>
@@ -122,7 +137,7 @@ export default function AktivitasMahasiswa() {
                 </div>
                 {act.status !== 'Disetujui' && act.status !== 'ACC' && (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: '#ef4444' }} onClick={() => handleDelete(act.id)}>
+                    <button className="btn btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: '#ef4444' }} onClick={() => confirmDelete(act.id)}>
                       <span className="material-symbols-outlined" style={{ fontSize: 14 }}>delete</span>
                       Hapus
                     </button>

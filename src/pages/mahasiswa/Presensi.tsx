@@ -186,10 +186,8 @@ export default function PresensiMahasiswa() {
               {(status === 'ready' || status === 'submitting') && location && (
                 <div style={{ width: '100%', height: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
                   <iframe 
-                    width="100%" height="100%" frameBorder="0" scrolling="no" 
-                    src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                    referrerPolicy="no-referrer"
-                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight={0} marginWidth={0}
+                    src={`https://maps.google.com/maps?width=100%25&height=100%25&hl=id&q=${location.lat},${location.lng}+(Lokasi%20Saat%20Ini)&t=&z=16&ie=UTF8&iwloc=B&output=embed`}
                     style={{ border: 'none' }}
                   ></iframe>
                 </div>
