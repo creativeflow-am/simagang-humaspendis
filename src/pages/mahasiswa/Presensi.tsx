@@ -167,44 +167,46 @@ export default function PresensiMahasiswa() {
             <div style={{ marginBottom: 20, textAlign: 'center', padding: '16px', background: 'var(--bg)', borderRadius: 12, border: '1px dashed var(--border)' }}>
               
               {status === 'checking' && (
-                <div style={{ padding: '20px 0' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: 'var(--primary)', marginBottom: 12, display: 'block', animation: 'pulse 1.5s infinite' }}>radar</span>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Mencari koordinat GPS...</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>Mohon tunggu sebentar.</div>
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 16, background: 'var(--surface)', padding: 16, opacity: 0.7, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 22, color: 'var(--text-light)' }}>location_searching</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ height: 14, background: 'var(--border)', borderRadius: 4, width: '60%', marginBottom: 8 }}></div>
+                      <div style={{ height: 10, background: 'var(--border)', borderRadius: 4, width: '40%' }}></div>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {status === 'error' && (
-                <div style={{ padding: '20px 0' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: '#ef4444', marginBottom: 12, display: 'block' }}>location_disabled</span>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Akses Lokasi Ditolak</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>{errorMsg}</div>
-                  <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => window.location.reload()}>Coba Lagi</button>
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid #fca5a5', marginBottom: 16, background: '#fef2f2', padding: 16 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 4px 10px rgba(239, 68, 68, 0.3)' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 22 }}>location_disabled</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#991b1b', lineHeight: 1.4 }}>Akses Lokasi Diblokir</div>
+                      <div style={{ fontSize: 12, color: '#991b1b', opacity: 0.8 }}>Mohon izinkan akses GPS di pengaturan browser Anda.</div>
+                    </div>
+                  </div>
+                  <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', marginTop: 12, fontSize: 12, background: 'white' }} onClick={() => window.location.reload()}>Coba Deteksi Ulang</button>
                 </div>
               )}
 
               {(status === 'ready' || status === 'submitting') && location && (
-                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--primary-light)', marginBottom: 16, background: 'var(--primary-light)', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--primary-light)', marginBottom: 16, background: 'var(--primary-light)', padding: 16 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 4px 10px rgba(21,134,132,0.3)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 22 }}>location_on</span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }}>Titik Lokasi Absen</div>
-                      <div style={{ fontSize: 12, color: 'var(--primary-dark)', opacity: 0.9, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary-dark)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {address}
                       </div>
                     </div>
                   </div>
-                  <a 
-                    href={`https://www.google.com/maps?q=${location.lat},${location.lng}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                    style={{ width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, justifyContent: 'center' }}
-                  >
-                    Lihat Peta di Google Maps
-                  </a>
                 </div>
               )}
             </div>
