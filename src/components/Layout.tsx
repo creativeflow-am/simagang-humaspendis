@@ -14,7 +14,7 @@ interface LayoutProps {
 }
 
 export function Layout({ role, title, subtitle, children, actions, showBack }: LayoutProps) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   
@@ -66,8 +66,18 @@ export function Layout({ role, title, subtitle, children, actions, showBack }: L
               {subtitle && <div className="topbar-sub">{subtitle}</div>}
             </div>
           </div>
-          <div className="topbar-right">
+          <div className="topbar-right" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {actions}
+            {role === 'admin' && (
+              <button 
+                className="btn btn-ghost" 
+                onClick={logout}
+                style={{ padding: 8, minHeight: 'auto', borderRadius: '50%', background: '#fee2e2', color: '#dc2626' }}
+                title="Keluar"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
+              </button>
+            )}
           </div>
         </header>
         <main className="page-content">
