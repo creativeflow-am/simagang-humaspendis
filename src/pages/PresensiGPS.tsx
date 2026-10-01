@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
-import { collection, query, onSnapshot } from 'firebase/firestore'
+import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { students } from '../store/useAuth'
+import { ConfirmModal } from '../components/ConfirmModal'
+import { toast } from 'sonner'
 
 const statusBadge: Record<string, string> = {
   'Hadir': 'badge-green',
@@ -20,6 +22,19 @@ export default function PresensiGPS() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Hari Ini')
   const [selectedStudent, setSelectedStudent] = useState('Semua')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    try {
+      await deleteDoc(doc(db, 'presensi', deleteId))
+      toast.success('Data presensi berhasil dihapus')
+    } catch (err) {
+      console.error(err)
+      toast.error('Gagal menghapus presensi')
+    }
+    setDeleteId(null)
+  }
 
   useEffect(() => {
     const q = query(collection(db, 'presensi'))
@@ -77,6 +92,14 @@ export default function PresensiGPS() {
 
   return (
     <Layout role="admin" title="Presensi" subtitle="Rekap kehadiran & GPS">
+      <ConfirmModal 
+        isOpen={!!deleteId}
+        title="Hapus Presensi"
+        message="Yakin ingin menghapus data presensi ini? Tindakan ini tidak dapat dibatalkan dan pengguna harus absen ulang."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+        confirmText="Ya, Hapus Data"
+      />
       <div className="page-header">
         <div>
           <div className="page-title">Rekapitulasi Presensi</div>
@@ -103,17 +126,18 @@ export default function PresensiGPS() {
           ))}
         </div>
         
-        <select 
-          className="form-input" 
-          style={{ width: 200 }} 
-          value={selectedStudent} 
-          onChange={e => setSelectedStudent(e.target.value)}
-        >
-          <option value="Semua">Semua Mahasiswa</option>
-          {students.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        <div style={{ position: 'relative' }}>
+          <select 
+            value={selectedStudent} 
+            onChange={e => setSelectedStudent(e.target.value)}
+            className="select-filter"
+          >
+            <option value="Semua">Semua Mahasiswa</option>
+            {students.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Summary */}
@@ -150,6 +174,7 @@ export default function PresensiGPS() {
                 <th>Jam Pulang</th>
                 <th>Jarak GPS</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -177,6 +202,16 @@ export default function PresensiGPS() {
                     <td style={{ fontWeight: 600 }}>{r.timeOut}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.gps}</td>
                     <td><span className={`badge ${statusBadge[r.status] || 'badge-gray'}`}>{r.status}</span></td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button 
+                        className="btn btn-ghost" 
+                        style={{ padding: '6px 8px', color: '#ef4444' }} 
+                        onClick={() => setDeleteId(r.id)}
+                        title="Hapus Presensi"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -219,6 +254,17 @@ export default function PresensiGPS() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>location_on</span>
                 Akurasi GPS: <strong style={{ color: 'var(--primary)' }}>{r.gps}</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
+                <button 
+                  className="btn btn-ghost" 
+                  style={{ fontSize: 13, padding: '6px 12px', color: '#ef4444' }} 
+                  onClick={() => setDeleteId(r.id)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                  Hapus
+                </button>
               </div>
             </div>
           ))

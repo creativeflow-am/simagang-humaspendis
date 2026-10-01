@@ -187,7 +187,10 @@ export default function PresensiMahasiswa() {
                 <div style={{ width: '100%', height: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
                   <iframe 
                     width="100%" height="100%" frameBorder="0" scrolling="no" 
-                    src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&z=16&output=embed`}
+                    src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    referrerPolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    style={{ border: 'none' }}
                   ></iframe>
                 </div>
               )}

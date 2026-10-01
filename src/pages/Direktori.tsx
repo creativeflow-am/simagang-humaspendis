@@ -50,7 +50,7 @@ export default function Direktori() {
       <div className="page-header">
         <div>
           <div className="page-title">Direktori Mahasiswa</div>
-          <div className="page-sub">TA 2024/2025 · Gelombang I · {students.length} peserta</div>
+          <div className="page-sub">Tahun 2026 · {students.length} peserta</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary">
