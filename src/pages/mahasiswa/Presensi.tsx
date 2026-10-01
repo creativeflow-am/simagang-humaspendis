@@ -60,16 +60,13 @@ export default function PresensiMahasiswa() {
         },
         (error) => {
           if (!mounted) return
-          // If timeout, retry silently to keep it "loading"
-          if (error.code === error.TIMEOUT) {
-            getPos()
+          // Only show red error if the user explicitly clicked "Deny" (code 1: PERMISSION_DENIED)
+          // For code 2 (POSITION_UNAVAILABLE) or code 3 (TIMEOUT), silently retry after 1s
+          if (error.code !== 1) {
+            setTimeout(getPos, 1500)
           } else {
             setStatus(prev => prev === 'ready' ? 'ready' : 'error')
-            if (error.code === error.PERMISSION_DENIED) {
-              setErrorMsg('Akses lokasi diblokir oleh perangkat/browser.')
-            } else {
-              setErrorMsg('Sinyal GPS tidak tersedia saat ini.')
-            }
+            setErrorMsg('Akses lokasi diblokir oleh perangkat/browser.')
           }
         },
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }

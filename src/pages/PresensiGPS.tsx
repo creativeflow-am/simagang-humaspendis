@@ -26,14 +26,15 @@ export default function PresensiGPS() {
 
   const handleDelete = async () => {
     if (!deleteId) return
+    const idToDelete = deleteId
+    setDeleteId(null)
     try {
-      await deleteDoc(doc(db, 'presensi', deleteId))
+      await deleteDoc(doc(db, 'presensi', idToDelete))
       toast.success('Data presensi berhasil dihapus')
     } catch (err) {
       console.error(err)
       toast.error('Gagal menghapus presensi')
     }
-    setDeleteId(null)
   }
 
   useEffect(() => {
@@ -62,7 +63,9 @@ export default function PresensiGPS() {
           timeIn,
           timeOut,
           status: d.status || 'Hadir',
-          gps: d.lokasi_datang ? 'Sesuai' : 'Tidak diketahui'
+          gps: d.lokasi_datang ? 'Sesuai' : 'Tidak diketahui',
+          lat: d.lokasi_datang?.lat,
+          lng: d.lokasi_datang?.lng
         }
       })
       
@@ -200,7 +203,18 @@ export default function PresensiGPS() {
                     </td>
                     <td style={{ fontWeight: 600 }}>{r.timeIn}</td>
                     <td style={{ fontWeight: 600 }}>{r.timeOut}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.gps}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      <div style={{ marginBottom: r.lat ? 6 : 0 }}>{r.gps}</div>
+                      {r.lat && r.lng && (
+                        <a 
+                          href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ color: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>map</span> Cek Lokasi
+                        </a>
+                      )}
+                    </td>
                     <td><span className={`badge ${statusBadge[r.status] || 'badge-gray'}`}>{r.status}</span></td>
                     <td style={{ textAlign: 'right' }}>
                       <button 
@@ -255,6 +269,17 @@ export default function PresensiGPS() {
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>location_on</span>
                 Akurasi GPS: <strong style={{ color: 'var(--primary)' }}>{r.gps}</strong>
               </div>
+
+              {r.lat && r.lng && (
+                <a 
+                  href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ width: '100%', padding: '8px', fontSize: 12, justifyContent: 'center', marginTop: 4 }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>map</span> Cek Lokasi di Maps
+                </a>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <button 

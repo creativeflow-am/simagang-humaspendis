@@ -93,14 +93,15 @@ export default function Penugasan() {
 
   const handleDelete = async () => {
     if (!deleteId) return
+    const idToDelete = deleteId
+    setDeleteId(null)
     try {
-      await deleteDoc(doc(db, 'aktivitas', deleteId))
+      await deleteDoc(doc(db, 'aktivitas', idToDelete))
       toast.success('Laporan berhasil dihapus')
     } catch (err) {
       console.error(err)
       toast.error('Gagal menghapus laporan')
     }
-    setDeleteId(null)
   }
 
   return (
