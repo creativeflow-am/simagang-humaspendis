@@ -160,8 +160,8 @@ export default function Penugasan() {
               {app.status === 'Menunggu' && (
                 activeAction?.id === app.id ? (
                   <div style={{ marginTop: 16, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: activeAction.type === 'tolak' ? '#ef4444' : '#d97706' }}>
-                      Catatan {activeAction.type === 'tolak' ? 'Penolakan' : 'Revisi'}:
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: activeAction?.type === 'tolak' ? '#ef4444' : '#d97706' }}>
+                      Catatan {activeAction?.type === 'tolak' ? 'Penolakan' : 'Revisi'}:
                     </div>
                     <textarea 
                       className="form-textarea" 
@@ -173,7 +173,7 @@ export default function Penugasan() {
                     />
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setActiveAction(null)}>Batal</button>
-                      <button className="btn btn-primary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => handleSubmitAction(app.id, activeAction.type)}>Kirim Catatan</button>
+                      <button className="btn btn-primary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => handleSubmitAction(app.id, activeAction?.type || '')}>Kirim Catatan</button>
                     </div>
                   </div>
                 ) : (

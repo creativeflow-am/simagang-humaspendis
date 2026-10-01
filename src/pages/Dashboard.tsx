@@ -16,9 +16,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const unsubAkt = onSnapshot(collection(db, 'aktivitas'), snap => {
-      const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const arr: any[] = snap.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> }))
       // Sort by date descending
-      arr.sort((a, b) => {
+      arr.sort((a: any, b: any) => {
         const timeA = a.tanggal?.toDate ? a.tanggal.toDate().getTime() : new Date(a.tanggal || 0).getTime()
         const timeB = b.tanggal?.toDate ? b.tanggal.toDate().getTime() : new Date(b.tanggal || 0).getTime()
         return timeB - timeA
@@ -26,7 +26,7 @@ export default function Dashboard() {
       setAktivitas(arr)
     })
     const unsubPres = onSnapshot(collection(db, 'presensi'), snap => {
-      setPresensi(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setPresensi(snap.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> })))
     })
     return () => { unsubAkt(); unsubPres() }
   }, [])

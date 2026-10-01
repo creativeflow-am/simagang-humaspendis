@@ -16,8 +16,8 @@ export default function DirektoriDetail() {
   useEffect(() => {
     if (!id) return
     const unsubAkt = onSnapshot(query(collection(db, 'aktivitas'), where('uid_mahasiswa', '==', id)), snap => {
-      const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      arr.sort((a, b) => {
+      const arr: any[] = snap.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> }))
+      arr.sort((a: any, b: any) => {
         const tA = a.tanggal?.toDate ? a.tanggal.toDate().getTime() : new Date(a.tanggal || 0).getTime()
         const tB = b.tanggal?.toDate ? b.tanggal.toDate().getTime() : new Date(b.tanggal || 0).getTime()
         return tB - tA
@@ -26,8 +26,8 @@ export default function DirektoriDetail() {
     })
     
     const unsubPres = onSnapshot(query(collection(db, 'presensi'), where('uid_mahasiswa', '==', id)), snap => {
-      const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      arr.sort((a, b) => {
+      const arr: any[] = snap.docs.map(d => ({ id: d.id, ...d.data() as Record<string, any> }))
+      arr.sort((a: any, b: any) => {
         const tA = a.waktu_datang?.toDate ? a.waktu_datang.toDate().getTime() : new Date(a.waktu_datang || 0).getTime()
         const tB = b.waktu_datang?.toDate ? b.waktu_datang.toDate().getTime() : new Date(b.waktu_datang || 0).getTime()
         return tB - tA

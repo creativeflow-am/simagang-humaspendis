@@ -7,6 +7,9 @@ export interface StudentProfile {
   username: string
   initials: string
   role?: string
+  university?: string
+  major?: string
+  nim?: string
 }
 
 export const students: StudentProfile[] = [
