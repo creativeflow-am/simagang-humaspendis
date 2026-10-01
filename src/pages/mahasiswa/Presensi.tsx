@@ -31,31 +31,54 @@ export default function PresensiMahasiswa() {
       return
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLocation({ lat, lng })
-        setStatus('ready')
+    let mounted = true
 
-        // Reverse geocoding for professional address text
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.display_name) {
-              setAddress(data.display_name)
+    const getPos = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!mounted) return
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setLocation({ lat, lng })
+          setStatus('ready')
+
+          // Reverse geocoding for professional address text
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(res => res.json())
+            .then(data => {
+              if (mounted) {
+                if (data.display_name) {
+                  setAddress(data.display_name)
+                } else {
+                  setAddress('Alamat tidak spesifik')
+                }
+              }
+            })
+            .catch(() => {
+              if (mounted) setAddress('Tidak dapat memuat nama jalan')
+            })
+        },
+        (error) => {
+          if (!mounted) return
+          // If timeout, retry silently to keep it "loading"
+          if (error.code === error.TIMEOUT) {
+            getPos()
+          } else {
+            setStatus(prev => prev === 'ready' ? 'ready' : 'error')
+            if (error.code === error.PERMISSION_DENIED) {
+              setErrorMsg('Akses lokasi diblokir oleh perangkat/browser.')
             } else {
-              setAddress('Alamat tidak spesifik')
+              setErrorMsg('Sinyal GPS tidak tersedia saat ini.')
             }
-          })
-          .catch(() => setAddress('Tidak dapat memuat nama jalan'))
-      },
-      () => {
-        setStatus('error')
-        setErrorMsg('Gagal mendapat lokasi. Aktifkan izin GPS Anda.')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
+          }
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+      )
+    }
+
+    getPos()
+
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => {
@@ -90,33 +113,46 @@ export default function PresensiMahasiswa() {
     setStatus('submitting')
     try {
       const todayStr = new Date().toISOString().split('T')[0]
-      if (attendance === 'none') {
-        // Absen Masuk
-        const docRef = await addDoc(collection(db, 'presensi'), {
-          uid_mahasiswa: user.id || '1',
-          nama_mahasiswa: user.name || 'Mahasiswa',
-          tanggal_str: todayStr,
-          tanggal: serverTimestamp(),
-          waktu_datang: serverTimestamp(),
-          waktu_pulang: null,
-          lokasi_datang: { lat: location.lat, lng: location.lng },
-          status: 'Hadir'
-        })
-        setRecordId(docRef.id)
-        setAttendance('masuk')
-        toast.success('Berhasil absen masuk!')
-      } else if (attendance === 'masuk' && recordId) {
-        // Absen Pulang
-        await updateDoc(doc(db, 'presensi', recordId), {
-          waktu_pulang: serverTimestamp(),
-          lokasi_pulang: { lat: location.lat, lng: location.lng }
-        })
-        setAttendance('pulang')
-        toast.success('Berhasil absen pulang! Hati-hati di jalan.')
+      const submitData = async () => {
+        if (attendance === 'none') {
+          // Absen Masuk
+          const docRef = await addDoc(collection(db, 'presensi'), {
+            uid_mahasiswa: user.id || '1',
+            nama_mahasiswa: user.name || 'Mahasiswa',
+            tanggal_str: todayStr,
+            tanggal: serverTimestamp(),
+            waktu_datang: serverTimestamp(),
+            waktu_pulang: null,
+            lokasi_datang: { lat: location.lat, lng: location.lng },
+            status: 'Hadir'
+          })
+          setRecordId(docRef.id)
+          setAttendance('masuk')
+          return 'Berhasil absen masuk!'
+        } else if (attendance === 'masuk' && recordId) {
+          // Absen Pulang
+          await updateDoc(doc(db, 'presensi', recordId), {
+            waktu_pulang: serverTimestamp(),
+            lokasi_pulang: { lat: location.lat, lng: location.lng }
+          })
+          setAttendance('pulang')
+          return 'Berhasil absen pulang! Hati-hati di jalan.'
+        }
+        return ''
       }
-    } catch (err) {
+
+      // Timeout 8 detik agar tidak nyangkut selamanya jika koneksi terputus
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000))
+      const msg = await Promise.race([submitData(), timeoutPromise])
+      
+      if (msg) toast.success(msg as string)
+    } catch (err: any) {
       console.error(err)
-      toast.error('Terjadi kesalahan jaringan')
+      if (err.message === 'TIMEOUT') {
+        toast.error('Koneksi terputus (Timeout). Silakan refresh halaman dan coba lagi.')
+      } else {
+        toast.error('Terjadi kesalahan jaringan')
+      }
     }
     setStatus('ready')
   }
