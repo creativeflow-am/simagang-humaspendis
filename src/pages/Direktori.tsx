@@ -1,25 +1,48 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Layout } from '../components/Layout'
-
-const students = [
-  { id: 1, initials: 'DN', name: 'Devita Nurwati', nim: '11210810000045', university: 'UIN Syarif Hidayatullah Jakarta', major: 'Komunikasi Penyiaran Islam', subTeam: 'Redaksi Berita', mentor: 'H. Fachrul Rozie, M.Si', period: '13 Jan – 13 Apr 2025', attendance: 98, logbook: 34, articles: 12 },
-  { id: 2, initials: 'MY', name: 'Muhammad Yusuf Zulkarnain', nim: '11210820000087', university: 'Universitas Indonesia', major: 'Ilmu Komunikasi', subTeam: 'Medsos & Desain', mentor: 'Rizki Amanda, S.Kom', period: '13 Jan – 13 Apr 2025', attendance: 100, logbook: 35, articles: 8 },
-  { id: 3, initials: 'MA', name: 'Mochammad Abiyyu Dwi Nugroho', nim: '20200610000012', university: 'UIN Sunan Kalijaga Yogyakarta', major: 'Jurnalistik Islam', subTeam: 'Video & Dokumentasi', mentor: 'M. Arfi Haikal, S.I.Kom', period: '13 Jan – 13 Apr 2025', attendance: 95, logbook: 33, articles: 6 },
-  { id: 4, initials: 'HF', name: 'Helfni Fahera', nim: '21020030000066', university: 'Universitas Padjadjaran', major: 'Hubungan Masyarakat', subTeam: 'Redaksi Berita', mentor: 'H. Fachrul Rozie, M.Si', period: '13 Jan – 13 Apr 2025', attendance: 97, logbook: 34, articles: 10 },
-  { id: 5, initials: 'GD', name: 'Genaksa Dwiky Nugraha', nim: '20200840000091', university: 'UIN Sunan Gunung Djati', major: 'Komunikasi Massa', subTeam: 'Peliputan Lapangan', mentor: 'M. Arfi Haikal, S.I.Kom', period: '13 Jan – 13 Apr 2025', attendance: 100, logbook: 35, articles: 15 },
-]
-
-const teams = ['Semua', 'Redaksi Berita', 'Medsos & Desain', 'Video & Dokumentasi', 'Peliputan Lapangan']
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+import { students as staticStudents } from '../store/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 export default function Direktori() {
   const [search, setSearch] = useState('')
-  const [team, setTeam] = useState('Semua')
-  const [selected, setSelected] = useState<typeof students[0] | null>(null)
+  const [aktivitas, setAktivitas] = useState<any[]>([])
+  const [presensi, setPresensi] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const unsubAkt = onSnapshot(collection(db, 'aktivitas'), snap => {
+      setAktivitas(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    const unsubPres = onSnapshot(collection(db, 'presensi'), snap => {
+      setPresensi(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    setLoading(false)
+    return () => { unsubAkt(); unsubPres() }
+  }, [])
+
+  const students = staticStudents.map(s => {
+    // Calculate total ACC tasks
+    const studentTasks = aktivitas.filter(a => a.uid_mahasiswa === s.id && (a.status === 'Disetujui' || a.status === 'ACC'))
+    
+    // Calculate total attendance
+    const studentPresensi = presensi.filter(p => p.uid_mahasiswa === s.id && (p.status === 'Hadir' || p.status === 'WFO' || p.status === 'WFA'))
+    
+    return {
+      ...s,
+      university: s.university || 'UIN Sayyid Ali Rahmatullah Tulungagung',
+      major: s.major || 'Komunikasi dan Penyiaran Islam',
+      nim: s.nim || '12040300' + s.id.padStart(2, '0'),
+      period: '1 Okt – 12 Des 2026',
+      attendance: studentPresensi.length, // Total count instead of percentage
+      totalKerja: studentTasks.length
+    }
+  })
 
   const filtered = students.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.nim.includes(search)
-    const matchTeam = team === 'Semua' || s.subTeam === team
-    return matchSearch && matchTeam
+    return s.name.toLowerCase().includes(search.toLowerCase())
   })
 
   return (
@@ -45,19 +68,21 @@ export default function Direktori() {
       <div className="stats-grid" style={{ marginBottom: 16 }}>
         <div className="stat-card">
           <div className="stat-label">Total Aktif</div>
-          <div className="stat-value">24</div>
+          <div className="stat-value">{students.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Rata-rata Kehadiran</div>
-          <div className="stat-value">97%</div>
+          <div className="stat-value">
+            {students.length > 0 ? Math.round(students.reduce((a, b) => a + b.attendance, 0) / students.length) : 0}%
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Logbook Terverif</div>
-          <div className="stat-value">208</div>
+          <div className="stat-label">Total Hasil Kerja ACC</div>
+          <div className="stat-value">{aktivitas.filter(a => a.status === 'Disetujui' || a.status === 'ACC').length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Total Publikasi</div>
-          <div className="stat-value">74</div>
+          <div className="stat-label">Sedang Direviu</div>
+          <div className="stat-value">{aktivitas.filter(a => a.status === 'Menunggu').length}</div>
         </div>
       </div>
 
@@ -71,119 +96,107 @@ export default function Direktori() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="filter-tabs">
-          {teams.map(t => (
-            <button key={t} className={`filter-tab${team === t ? ' active' : ''}`} onClick={() => setTeam(t)}>
-              {t}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Table */}
-      <div className="card">
+      {/* Table (Desktop) */}
+      <div className="card desktop-only" style={{ marginBottom: 16 }}>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Mahasiswa</th>
                 <th>Perguruan Tinggi</th>
-                <th>Sub-tim</th>
-                <th>Pembimbing</th>
                 <th>Kehadiran</th>
-                <th>Logbook</th>
-                <th>Rilis</th>
-                <th></th>
+                <th>Hasil Kerja (ACC)</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(s => (
-                <tr key={s.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div className="avatar">{s.initials}</div>
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{s.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{s.nim}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                    <div>{s.university}</div>
-                    <div style={{ color: 'var(--text-light)' }}>{s.major}</div>
-                  </td>
-                  <td><span className="badge badge-gray">{s.subTeam}</span></td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.mentor}</td>
-                  <td>
-                    <span style={{ fontWeight: 600, color: s.attendance >= 95 ? 'var(--primary)' : 'var(--secondary)' }}>{s.attendance}%</span>
-                  </td>
-                  <td style={{ fontWeight: 500 }}>{s.logbook}</td>
-                  <td style={{ fontWeight: 500 }}>{s.articles}</td>
-                  <td>
-                    <button className="btn btn-ghost" onClick={() => setSelected(s)}>
-                      <span className="material-symbols-outlined">open_in_new</span>
-                    </button>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-light)', padding: 24 }}>Memuat data mahasiswa...</td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-light)', padding: 24 }}>Tidak ada data mahasiswa.</td>
+                </tr>
+              ) : (
+                filtered.map(s => (
+                  <tr key={s.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="avatar">{s.initials}</div>
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{s.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      <div>{s.university}</div>
+                      <div style={{ color: 'var(--text-light)' }}>{s.major}</div>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: s.attendance > 0 ? 'var(--primary)' : 'var(--secondary)' }}>{s.attendance} Hari</span>
+                    </td>
+                    <td style={{ fontWeight: 500 }}>{s.totalKerja} Laporan</td>
+                    <td>
+                      <button className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => navigate('/admin/direktori/' + s.id)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>visibility</span>
+                        Lihat Profil
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal */}
-      {selected && (
-        <div className="modal-backdrop" onClick={() => setSelected(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ fontWeight: 600, fontSize: 15 }}>Detail Mahasiswa</div>
-              <button className="btn btn-ghost" onClick={() => setSelected(null)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <div className="avatar" style={{ width: 48, height: 48, fontSize: 16 }}>{selected.initials}</div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{selected.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{selected.nim}</div>
-                  <span className="badge badge-green" style={{ marginTop: 4 }}>Aktif</span>
+      {/* Responsive Card Grid (Mobile) */}
+      <div className="mobile-only" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        {loading ? (
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-light)' }}>Memuat data mahasiswa...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-light)' }}>Tidak ada data mahasiswa.</div>
+        ) : (
+          filtered.map(s => (
+            <div key={s.id} className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* ... (rest of card content is identical, but wrapped in ternary) ... */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="avatar" style={{ width: 44, height: 44, fontSize: 15 }}>{s.initials}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
                 </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                {[
-                  ['Perguruan Tinggi', selected.university],
-                  ['Program Studi', selected.major],
-                  ['Sub-tim', selected.subTeam],
-                  ['Pembimbing', selected.mentor],
-                  ['Periode', selected.period],
-                ].map(([l, v]) => (
-                  <div className="info-row" key={l}>
-                    <div className="info-label">{l}</div>
-                    <div className="info-value">{v}</div>
-                  </div>
-                ))}
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--text-light)' }}>school</span> 
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.university}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--text-light)' }}>menu_book</span> 
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.major}</span>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                {[
-                  ['Kehadiran', `${selected.attendance}%`],
-                  ['Logbook', String(selected.logbook)],
-                  ['Publikasi', String(selected.articles)],
-                ].map(([l, v]) => (
-                  <div key={l} style={{ textAlign: 'center', padding: '12px', border: '1px solid var(--border)', borderRadius: 6 }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary)' }}>{v}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{l}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 'auto' }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 2 }}>Kehadiran</div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: s.attendance > 0 ? 'var(--primary)' : 'var(--secondary)' }}>{s.attendance} Hari</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 2 }}>Hasil Kerja</div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>{s.totalKerja} Laporan</div>
+                </div>
               </div>
+              <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} onClick={() => navigate('/admin/direktori/' + s.id)}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span> Lihat Profil
+              </button>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setSelected(null)}>Tutup</button>
-              <button className="btn btn-primary">Beri Penugasan</button>
-            </div>
-          </div>
-        </div>
-      )}
+          ))
+        )}
+      </div>
+
     </Layout>
   )
 }

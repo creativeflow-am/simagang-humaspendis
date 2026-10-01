@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../../components/Layout'
+import { toast } from 'sonner'
+import { useAuth } from '../../store/useAuth'
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 
 export default function PresensiMahasiswa() {
+  const { user } = useAuth()
   const [status, setStatus] = useState<'checking' | 'error' | 'ready' | 'submitting'>('checking')
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null)
   const [address, setAddress] = useState('Sedang mengidentifikasi alamat...')
@@ -9,6 +14,7 @@ export default function PresensiMahasiswa() {
 
   // State to track if user has checked in or checked out
   const [attendance, setAttendance] = useState<'none' | 'masuk' | 'pulang'>('none')
+  const [recordId, setRecordId] = useState<string | null>(null)
   
   // Real-time clock
   const [time, setTime] = useState(new Date())
@@ -52,16 +58,67 @@ export default function PresensiMahasiswa() {
     )
   }, [])
 
-  const handleAbsen = () => {
-    setStatus('submitting')
-    setTimeout(() => {
-      if (attendance === 'none') {
-        setAttendance('masuk')
-      } else if (attendance === 'masuk') {
-        setAttendance('pulang')
+  useEffect(() => {
+    if (!user) return
+    const fetchTodayRecord = async () => {
+      try {
+        const todayStr = new Date().toISOString().split('T')[0]
+        const q = query(
+          collection(db, 'presensi'),
+          where('uid_mahasiswa', '==', user.id || '1'),
+          where('tanggal_str', '==', todayStr)
+        )
+        const snapshot = await getDocs(q)
+        if (!snapshot.empty) {
+          const docData = snapshot.docs[0]
+          setRecordId(docData.id)
+          if (docData.data().waktu_pulang) {
+            setAttendance('pulang')
+          } else {
+            setAttendance('masuk')
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching attendance:", err)
       }
-      setStatus('ready') // revert to ready so they see the map again if needed
-    }, 1500)
+    }
+    fetchTodayRecord()
+  }, [user])
+
+  const handleAbsen = async () => {
+    if (!user || !location) return
+    setStatus('submitting')
+    try {
+      const todayStr = new Date().toISOString().split('T')[0]
+      if (attendance === 'none') {
+        // Absen Masuk
+        const docRef = await addDoc(collection(db, 'presensi'), {
+          uid_mahasiswa: user.id || '1',
+          nama_mahasiswa: user.name || 'Mahasiswa',
+          tanggal_str: todayStr,
+          tanggal: serverTimestamp(),
+          waktu_datang: serverTimestamp(),
+          waktu_pulang: null,
+          lokasi_datang: { lat: location.lat, lng: location.lng },
+          status: 'Hadir'
+        })
+        setRecordId(docRef.id)
+        setAttendance('masuk')
+        toast.success('Berhasil absen masuk!')
+      } else if (attendance === 'masuk' && recordId) {
+        // Absen Pulang
+        await updateDoc(doc(db, 'presensi', recordId), {
+          waktu_pulang: serverTimestamp(),
+          lokasi_pulang: { lat: location.lat, lng: location.lng }
+        })
+        setAttendance('pulang')
+        toast.success('Berhasil absen pulang! Hati-hati di jalan.')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Terjadi kesalahan jaringan')
+    }
+    setStatus('ready')
   }
 
   const dateStr = time.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Layout } from '../../components/Layout'
 import { useAuth } from '../../store/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 export default function ProfilMahasiswa() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+  const [showDataDiri, setShowDataDiri] = useState(false)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -30,17 +33,36 @@ export default function ProfilMahasiswa() {
         {/* Menu List */}
         <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                <span className="material-symbols-outlined">badge</span>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => setShowDataDiri(!showDataDiri)}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                  <span className="material-symbols-outlined">badge</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Data Diri</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-light)' }}>Jurusan & Universitas</div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Data Diri</div>
-                <div style={{ fontSize: 12, color: 'var(--text-light)' }}>NIM & Universitas</div>
-              </div>
+              <span className="material-symbols-outlined" style={{ color: 'var(--text-light)', transform: showDataDiri ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>chevron_right</span>
             </div>
-            <span className="material-symbols-outlined" style={{ color: 'var(--text-light)' }}>chevron_right</span>
+            
+            {showDataDiri && (
+              <div style={{ marginTop: 16, padding: 16, background: 'var(--bg)', borderRadius: 12 }}>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 4 }}>Nama Lengkap</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{user?.name}</div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 4 }}>Jurusan</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>Komunikasi dan Penyiaran Islam</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-light)', marginBottom: 4 }}>Universitas</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>Universitas Islam Negeri Sayyid Ali Rahmatullah</div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} onClick={toggleTheme}>
@@ -58,20 +80,9 @@ export default function ProfilMahasiswa() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                <span className="material-symbols-outlined">help</span>
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Pusat Bantuan</div>
-                <div style={{ fontSize: 12, color: 'var(--text-light)' }}>Hubungi Admin</div>
-              </div>
-            </div>
-            <span className="material-symbols-outlined" style={{ color: 'var(--text-light)' }}>chevron_right</span>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', cursor: 'pointer' }} onClick={() => { logout(); window.location.href = '/login' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', cursor: 'pointer' }} onClick={() => { logout(); navigate('/login') }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
               <span className="material-symbols-outlined">logout</span>
             </div>

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 
 const adminNav = [
@@ -10,9 +10,9 @@ const adminNav = [
 
 const mahasiswaNav = [
   { label: 'Beranda', icon: 'grid_view', path: '/' },
-  { label: 'Presensi', icon: 'photo_camera', path: '/presensi' },
-  { label: 'Tugas', icon: 'newspaper', path: '/tugas' },
-  { label: 'Logbook', icon: 'menu_book', path: '/logbook' },
+  { label: 'Presensi', icon: 'location_on', path: '/presensi' },
+  { label: 'Aktivitas', icon: 'assignment', path: '/aktivitas' },
+  { label: 'Profil', icon: 'person', path: '/profil' },
 ]
 
 interface SidebarProps {
@@ -21,8 +21,14 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const { pathname } = useLocation()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navItems = role === 'admin' ? adminNav : mahasiswaNav
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <aside className="sidebar">
@@ -60,13 +66,35 @@ export function Sidebar({ role }: SidebarProps) {
       <div className="sidebar-footer">
         <div className="user-card">
           <div className="user-avatar">
-            {role === 'admin' ? 'FR' : user?.initials || 'AF'}
+            {user?.initials || 'AD'}
           </div>
           <div className="user-info">
-            <div className="user-name">{role === 'admin' ? 'H. Fachrul Rozie' : user?.name || 'Ahmad Fauzi'}</div>
-            <div className="user-role">{role === 'admin' ? 'Pembimbing' : 'Mahasiswa'}</div>
+            <div className="user-name">{user?.name || 'Admin'}</div>
+            <div className="user-role">{role === 'admin' ? 'Admin Humas' : 'Mahasiswa'}</div>
           </div>
         </div>
+        <button 
+          onClick={handleLogout}
+          style={{ 
+            width: '100%', 
+            marginTop: 12, 
+            padding: '10px', 
+            background: 'transparent', 
+            border: '1px solid #fee2e2', 
+            color: '#ef4444', 
+            borderRadius: 8, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: 8, 
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 600
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span>
+          Keluar
+        </button>
       </div>
     </aside>
   )

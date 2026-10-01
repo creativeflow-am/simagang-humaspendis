@@ -1,25 +1,58 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useAuth } from '../store/useAuth'
 
 export default function Login() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
 
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, [])
+
   useEffect(() => {
     if (user) {
-      navigate('/')
+      if (user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
     }
   }, [user, navigate])
 
-  const handleGoogleLogin = () => {
-    // Mock login as Mahasiswa
-    login('mahasiswa', '')
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const success = login(username, password)
+    if (!success) {
+      setError(true)
+    }
   }
 
-  const handleAdminLogin = () => {
-    // Mock login as Admin
-    login('admin', '')
+
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        toast.success('Pemasangan aplikasi dimulai...');
+      }
+      setDeferredPrompt(null);
+    } else {
+      toast.info('Gunakan Chrome/Safari di HP, lalu ketuk menu pengaturan dan pilih "Add to Home Screen" atau "Install App".');
+    }
   }
 
   return (
@@ -32,48 +65,88 @@ export default function Login() {
             </div>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>SIMAGANG</h1>
-          <p style={{ color: 'var(--text-light)', fontSize: 14 }}>Subbagian Humas Ditjen Pendis</p>
+          <p style={{ color: 'var(--text-light)', fontSize: 14 }}>Humas Ditjen Pendis Kemenag RI</p>
         </div>
 
         <div className="card">
-          <div className="card-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Selamat Datang</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-light)', marginBottom: 24, lineHeight: 1.5 }}>
-              Gunakan akun Google Anda untuk mendaftar atau masuk ke sistem SIMAGANG.
-            </p>
+          <div className="card-body">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {error && (
+                <div className="badge badge-red" style={{ padding: 10, justifyContent: 'center', fontSize: 13 }}>
+                  Username atau password salah
+                </div>
+              )}
+              
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6, color: 'var(--text-muted)' }}>Username</label>
+                <div className="input-wrap">
+                  <span className="material-symbols-outlined">person</span>
+                  <input 
+                    type="text" 
+                    placeholder="Masukkan username Anda" 
+                    value={username}
+                    onChange={e => { setUsername(e.target.value); setError(false) }}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6, color: 'var(--text-muted)' }}>Password</label>
+                <div className="input-wrap" style={{ position: 'relative' }}>
+                  <span className="material-symbols-outlined">lock</span>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Masukkan password" 
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setError(false) }}
+                    required
+                    style={{ paddingRight: 40 }}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
+              </div>
 
-            <button onClick={handleGoogleLogin} className="btn" style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              padding: '12px',
-              backgroundColor: 'white',
-              color: '#3c4043',
-              border: '1px solid #dadce0',
-              boxShadow: '0 1px 2px 0 rgba(60,64,67,0.3)',
-              fontSize: 14,
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12
-            }}>
-              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ width: 18, height: 18 }}>
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                <path fill="none" d="M0 0h48v48H0z"></path>
-              </svg>
-              Lanjutkan dengan Google
-            </button>
-            
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-              <button onClick={handleAdminLogin} style={{ 
-                background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' 
-              }}>
-                [Mockup] Login sebagai Admin
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '10px', marginTop: 8, fontSize: 14 }}>
+                Masuk
               </button>
-            </div>
+            </form>
+
           </div>
+        </div>
+
+        {/* Download App Prompt for PWA */}
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 12 }}>
+            Belum punya aplikasinya?
+          </p>
+          <button 
+            type="button"
+            onClick={handleInstallClick}
+            className="btn"
+            style={{
+              background: 'rgba(21, 134, 132, 0.1)',
+              color: 'var(--primary)',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: 20,
+              fontSize: 13,
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer'
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
+            Unduh Aplikasi
+          </button>
         </div>
       </div>
     </div>

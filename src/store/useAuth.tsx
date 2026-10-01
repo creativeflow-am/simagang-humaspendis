@@ -6,6 +6,7 @@ export interface StudentProfile {
   name: string
   username: string
   initials: string
+  role?: string
 }
 
 export const students: StudentProfile[] = [
@@ -31,22 +32,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('simagang_user_id')
     if (saved) {
-      const found = students.find(s => s.id === saved)
-      if (found) setUser(found)
+      if (saved === 'admin-1') {
+        setUser({ id: 'admin-1', name: 'Admin Pendis', username: 'simagangpendis', initials: 'AD', role: 'admin' })
+      } else {
+        const found = students.find(s => s.id === saved)
+        if (found) setUser({ ...found, role: 'mahasiswa' })
+      }
     }
     setLoading(false)
   }, [])
 
   const login = (username: string, pass: string) => {
-    // Password dummy: 123456 untuk semua
-    if (pass !== '123456') return false
+    const usernameLower = username.toLowerCase().trim()
     
-    const found = students.find(s => s.username === username.toLowerCase())
-    if (found) {
-      setUser(found)
-      localStorage.setItem('simagang_user_id', found.id)
+    // Check Admin
+    if (usernameLower === 'admin' && pass === 'admin2026') {
+      const admin = { id: 'admin-1', name: 'Admin Pendis', username: 'admin', initials: 'AD', role: 'admin' }
+      setUser(admin)
+      localStorage.setItem('simagang_user_id', admin.id)
       return true
     }
+
+    // Check Mahasiswa
+    // Password format: first name + 2026 (e.g. devita2026)
+    if (pass === `${usernameLower}2026`) {
+      const found = students.find(s => s.username === usernameLower)
+      if (found) {
+        setUser({ ...found, role: 'mahasiswa' })
+        localStorage.setItem('simagang_user_id', found.id)
+        return true
+      }
+    }
+    
     return false
   }
 

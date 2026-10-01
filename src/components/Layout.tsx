@@ -19,12 +19,20 @@ export function Layout({ role, title, subtitle, children, actions, showBack }: L
   const { pathname } = useLocation()
   
   useEffect(() => {
-    if (role === 'mahasiswa' && !user) {
+    if (!user) {
       navigate('/login')
+      return
     }
-  }, [user, role, navigate])
+    
+    // Role protection
+    if (role === 'admin' && user.role !== 'admin') {
+      navigate('/') // Mahasiswa trying to access admin
+    } else if (role === 'mahasiswa' && user.role === 'admin') {
+      navigate('/admin') // Admin trying to access mahasiswa
+    }
+  }, [user, navigate, role])
 
-  if (role === 'mahasiswa' && !user) return null
+  if (!user) return null
 
   const mahasiswaNav = [
     { label: 'Beranda', icon: 'grid_view', path: '/' },
@@ -33,8 +41,17 @@ export function Layout({ role, title, subtitle, children, actions, showBack }: L
     { label: 'Profil', icon: 'person', path: '/profil' },
   ]
 
+  const adminNav = [
+    { label: 'Dasbor', icon: 'dashboard', path: '/admin' },
+    { label: 'Mahasiswa', icon: 'school', path: '/admin/direktori' },
+    { label: 'Approval', icon: 'assignment_turned_in', path: '/admin/penugasan' },
+    { label: 'Presensi', icon: 'location_on', path: '/admin/presensi' },
+  ]
+
+  const navItems = role === 'admin' ? adminNav : mahasiswaNav
+
   return (
-    <div className={`layout ${role === 'mahasiswa' ? 'is-mahasiswa' : ''}`}>
+    <div className="layout is-mahasiswa">
       <Sidebar role={role} />
       <div className="main-content">
         <header className="topbar">
@@ -57,21 +74,19 @@ export function Layout({ role, title, subtitle, children, actions, showBack }: L
           {children}
         </main>
 
-        {role === 'mahasiswa' && (
-          <nav className="bottom-nav">
-            <div className="bottom-nav-inner">
-              {mahasiswaNav.map((item) => {
-                const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
-                return (
-                  <Link key={item.path} to={item.path} className={`bottom-nav-item ${isActive ? 'active' : ''}`}>
-                    <span className="material-symbols-outlined">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          </nav>
-        )}
+        <nav className="bottom-nav">
+          <div className="bottom-nav-inner">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path || (item.path !== '/' && item.path !== '/admin' && pathname.startsWith(item.path))
+              return (
+                <Link key={item.path} to={item.path} className={`bottom-nav-item ${isActive ? 'active' : ''}`}>
+                  <span className="material-symbols-outlined">{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </nav>
       </div>
     </div>
   )
