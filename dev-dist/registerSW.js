@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/simagang-humaspendis/dev-sw.js?dev-sw', { scope: '/simagang-humaspendis/', type: 'classic' })
