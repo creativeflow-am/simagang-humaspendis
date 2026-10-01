@@ -4,7 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/simagang-humaspendis/',
+  // Gunakan root '/' jika di Vercel, jika tidak (seperti di GitHub Pages) gunakan path repo
+  base: process.env.VERCEL ? '/' : '/simagang-humaspendis/',
   plugins: [
     react(),
     VitePWA({

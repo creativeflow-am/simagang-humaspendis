@@ -12,6 +12,7 @@ import AktivitasFormMahasiswa from './pages/mahasiswa/AktivitasForm'
 import ProfilMahasiswa from './pages/mahasiswa/Profil'
 import { AuthProvider } from './store/useAuth'
 import { Toaster } from 'sonner'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
@@ -38,7 +39,7 @@ export default function App() {
           <Route path="/admin/presensi" element={<PresensiGPS />} />
 
           {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
