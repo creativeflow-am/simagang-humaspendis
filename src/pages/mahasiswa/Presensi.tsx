@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Layout } from '../../components/Layout'
 import { toast } from 'sonner'
 import { useAuth } from '../../store/useAuth'
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 export default function PresensiMahasiswa() {
@@ -83,29 +83,32 @@ export default function PresensiMahasiswa() {
 
   useEffect(() => {
     if (!user) return
-    const fetchTodayRecord = async () => {
-      try {
-        const todayStr = new Date().toISOString().split('T')[0]
-        const q = query(
-          collection(db, 'presensi'),
-          where('uid_mahasiswa', '==', user.id || '1'),
-          where('tanggal_str', '==', todayStr)
-        )
-        const snapshot = await getDocs(q)
-        if (!snapshot.empty) {
-          const docData = snapshot.docs[0]
-          setRecordId(docData.id)
-          if (docData.data().waktu_pulang) {
-            setAttendance('pulang')
-          } else {
-            setAttendance('masuk')
-          }
+    
+    const todayStr = new Date().toISOString().split('T')[0]
+    const q = query(
+      collection(db, 'presensi'),
+      where('uid_mahasiswa', '==', user.id || '1'),
+      where('tanggal_str', '==', todayStr)
+    )
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const docData = snapshot.docs[0]
+        setRecordId(docData.id)
+        if (docData.data().waktu_pulang) {
+          setAttendance('pulang')
+        } else {
+          setAttendance('masuk')
         }
-      } catch (err) {
-        console.error("Error fetching attendance:", err)
+      } else {
+        setRecordId(null)
+        setAttendance('none')
       }
-    }
-    fetchTodayRecord()
+    }, (err) => {
+      console.error("Error fetching attendance:", err)
+    })
+    
+    return () => unsubscribe()
   }, [user])
 
   const handleAbsen = async () => {
