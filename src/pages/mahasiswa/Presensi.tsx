@@ -184,12 +184,23 @@ export default function PresensiMahasiswa() {
               )}
 
               {(status === 'ready' || status === 'submitting') && location && (
-                <div style={{ width: '100%', height: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
-                  <iframe 
-                    width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight={0} marginWidth={0}
-                    src={`https://maps.google.com/maps?width=100%25&height=100%25&hl=id&q=${location.lat},${location.lng}+(Lokasi%20Saat%20Ini)&t=&z=16&ie=UTF8&iwloc=B&output=embed`}
-                    style={{ border: 'none' }}
-                  ></iframe>
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--primary-light)', marginBottom: 16, background: 'var(--primary-light)', padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 4px 10px rgba(21,134,132,0.3)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 24 }}>location_on</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 2 }}>Lokasi Ditemukan</div>
+                    <div style={{ fontSize: 12, color: 'var(--primary-dark)', opacity: 0.8, fontFamily: 'monospace' }}>{location.lat.toFixed(5)}, {location.lng.toFixed(5)}</div>
+                  </div>
+                  <a 
+                    href={`https://www.google.com/maps?q=${location.lat},${location.lng}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8 }}
+                  >
+                    Buka Maps
+                  </a>
                 </div>
               )}
             </div>
