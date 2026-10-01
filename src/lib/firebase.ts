@@ -5,12 +5,12 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKey",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "dummy-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "dummy-project",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "dummy-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef"
+  apiKey: "AIzaSyDZAZhGeM3C9pgJzBZkqYX3T59WxI5BYsQ",
+  authDomain: "jurnal-yuyun-1b44f.firebaseapp.com",
+  projectId: "jurnal-yuyun-1b44f",
+  storageBucket: "jurnal-yuyun-1b44f.firebasestorage.app",
+  messagingSenderId: "470446806419",
+  appId: "1:470446806419:web:65432aa34fb510338a0466"
 };
 
 // Initialize Firebase
