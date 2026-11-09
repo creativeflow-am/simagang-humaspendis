@@ -18,11 +18,27 @@ const statusBadge: Record<string, string> = {
 const todayFormatted = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 const todayStrDate = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD format
 
+// Generate list bulan dari 6 bulan lalu sampai sekarang
+function generateMonthOptions() {
+  const months = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = d.toLocaleDateString('en-CA').substring(0, 7) // YYYY-MM
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+    months.push({ value, label })
+  }
+  return months
+}
+const monthOptions = generateMonthOptions()
+const currentMonth = new Date().toLocaleDateString('en-CA').substring(0, 7)
+
 export default function PresensiGPS() {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Hari Ini')
   const [selectedStudent, setSelectedStudent] = useState('Semua')
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const handleDelete = async () => {
@@ -85,6 +101,7 @@ export default function PresensiGPS() {
 
   const displayedRecords = records.filter(r => {
     if (activeTab === 'Hari Ini' && r.rawDateStr !== todayStrDate) return false
+    if (activeTab === 'Per Bulan' && !r.rawDateStr.startsWith(selectedMonth)) return false
     if (selectedStudent !== 'Semua' && r.uid_mahasiswa !== selectedStudent) return false
     return true
   })
@@ -95,8 +112,10 @@ export default function PresensiGPS() {
   const totalIzin = displayedRecords.filter(r => r.status === 'Sakit' || r.status === 'Izin').length
 
   const handleExport = () => {
-    const label = activeTab === 'Hari Ini' ? todayStrDate : 'Semua'
-    const filename = `Rekapitulasi_Presensi_${label}.csv`
+    const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth
+    const label = activeTab === 'Hari Ini' ? todayStrDate : activeTab === 'Per Bulan' ? selectedMonth : 'Semua'
+    const studentLabel = selectedStudent === 'Semua' ? 'Semua_Mahasiswa' : (students.find(s => s.id === selectedStudent)?.name || selectedStudent).replace(/ /g, '_')
+    const filename = `Rekapitulasi_Presensi_${label}_${studentLabel}.csv`
     const headers = ['No', 'Nama Mahasiswa', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status', 'GPS']
     const rows = displayedRecords.map((r, i) => [
       [i + 1],
@@ -112,7 +131,9 @@ export default function PresensiGPS() {
   }
 
   const handlePrint = () => {
-    const label = activeTab === 'Hari Ini' ? `Hari Ini (${todayStrDate})` : 'Semua Data'
+    const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth
+    const label = activeTab === 'Hari Ini' ? `Hari Ini (${todayStrDate})` : activeTab === 'Per Bulan' ? monthLabel : 'Semua Data'
+    const studentLabel = selectedStudent === 'Semua' ? 'Semua Mahasiswa' : (students.find(s => s.id === selectedStudent)?.name || '-')
     const rows = displayedRecords.map((r, i) => `
       <tr>
         <td>${i + 1}</td>
@@ -127,10 +148,11 @@ export default function PresensiGPS() {
     printHTML('Rekapitulasi Presensi', `
       <div class="header">
         <h1>REKAPITULASI PRESENSI MAHASISWA MAGANG</h1>
-        <p>Diskominfo – Bidang Humaspendis</p>
+        <p>Humas Ditjen Pendis Kementerian Agama RI</p>
       </div>
       <div class="meta">
-        <div><strong>Filter:</strong> ${label}</div>
+        <div><strong>Filter Periode:</strong> ${label}</div>
+        <div><strong>Mahasiswa:</strong> ${studentLabel}</div>
         <div><strong>Total Masuk:</strong> ${totalMasuk}</div>
         <div><strong>Total Pulang:</strong> ${totalPulang}</div>
         <div><strong>Izin/Sakit:</strong> ${totalIzin}</div>
@@ -176,14 +198,27 @@ export default function PresensiGPS() {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20, justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="filter-tabs" style={{ margin: 0 }}>
-          {['Hari Ini', 'Semua Presensi'].map(t => (
+          {['Hari Ini', 'Per Bulan', 'Semua Presensi'].map(t => (
             <button key={t} className={`filter-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
               {t}
             </button>
           ))}
         </div>
         
-        <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {/* Dropdown Bulan — hanya tampil di tab Per Bulan */}
+          {activeTab === 'Per Bulan' && (
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="select-filter"
+            >
+              {monthOptions.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          )}
+          {/* Dropdown Mahasiswa */}
           <select 
             value={selectedStudent} 
             onChange={e => setSelectedStudent(e.target.value)}

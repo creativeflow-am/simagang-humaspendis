@@ -4,8 +4,24 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { students } from '../store/useAuth'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { downloadCSV, printHTML } from '../utils/exportUtils'
+
+// Generate list bulan dari 6 bulan lalu sampai sekarang
+function generateMonthOptions() {
+  const months = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = d.toLocaleDateString('en-CA').substring(0, 7) // YYYY-MM
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+    months.push({ value, label })
+  }
+  return months
+}
+const monthOptions = generateMonthOptions()
+const currentMonth = new Date().toLocaleDateString('en-CA').substring(0, 7)
 
 export default function Penugasan() {
   const [activeTab, setActiveTab] = useState('Approval')
@@ -14,6 +30,8 @@ export default function Penugasan() {
   const [allTasks, setAllTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState('Semua')
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
   useEffect(() => {
     const q = query(collection(db, 'aktivitas'))
@@ -33,6 +51,7 @@ export default function Penugasan() {
 
         return {
           id: doc.id,
+          uid_mahasiswa: d.uid_mahasiswa || '',
           name: d.nama_mahasiswa || 'Tanpa Nama',
           category: d.kategori || 'Lainnya',
           date: dateStr,
@@ -57,6 +76,8 @@ export default function Penugasan() {
   const displayedTasks = allTasks.filter(t => {
     if (activeTab === 'Approval') return t.status === 'Menunggu'
     if (activeTab === 'Tugas Hari Ini') return t.rawDate === todayRaw
+    if (activeTab === 'Per Bulan' && !t.rawDate.startsWith(selectedMonth)) return false
+    if (selectedStudent !== 'Semua' && t.uid_mahasiswa !== selectedStudent) return false
     return true
   })
 
@@ -66,8 +87,10 @@ export default function Penugasan() {
   const countSemua = allTasks.length
 
   const handleExport = () => {
-    const label = activeTab === 'Semua Tugas' ? 'Semua' : activeTab.replace(/ /g, '_')
-    const filename = `Rekapitulasi_Penugasan_${label}.csv`
+    const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth
+    const label = activeTab === 'Per Bulan' ? selectedMonth : activeTab === 'Semua Tugas' ? 'Semua' : activeTab.replace(/ /g, '_')
+    const studentLabel = selectedStudent === 'Semua' ? 'Semua_Mahasiswa' : (students.find(s => s.id === selectedStudent)?.name || selectedStudent).replace(/ /g, '_')
+    const filename = `Rekapitulasi_Penugasan_${label}_${studentLabel}.csv`
     const headers = ['No', 'Nama Mahasiswa', 'Tanggal', 'Kategori', 'Deskripsi', 'Status']
     const rows = displayedTasks.map((t, i) => [
       [i + 1],
@@ -82,6 +105,9 @@ export default function Penugasan() {
   }
 
   const handlePrint = () => {
+    const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth
+    const periodLabel = activeTab === 'Per Bulan' ? monthLabel : activeTab === 'Semua Tugas' ? 'Semua Data' : activeTab
+    const studentLabel = selectedStudent === 'Semua' ? 'Semua Mahasiswa' : (students.find(s => s.id === selectedStudent)?.name || '-')
     const rows = displayedTasks.map((t, i) => `
       <tr>
         <td>${i + 1}</td>
@@ -95,10 +121,11 @@ export default function Penugasan() {
     printHTML('Rekapitulasi Laporan Penugasan', `
       <div class="header">
         <h1>REKAPITULASI LAPORAN PENUGASAN MAGANG</h1>
-        <p>Diskominfo – Bidang Humaspendis</p>
+        <p>Humas Ditjen Pendis Kementerian Agama RI</p>
       </div>
       <div class="meta">
-        <div><strong>Filter:</strong> ${activeTab}</div>
+        <div><strong>Filter Periode:</strong> ${periodLabel}</div>
+        <div><strong>Mahasiswa:</strong> ${studentLabel}</div>
         <div><strong>Menunggu Approval:</strong> ${countApproval}</div>
         <div><strong>Tugas Hari Ini:</strong> ${countHariIni}</div>
         <div><strong>Total Semua:</strong> ${countSemua}</div>
@@ -196,12 +223,40 @@ export default function Penugasan() {
         </div>
       </div>
 
-      <div className="filter-tabs" style={{ marginBottom: 20 }}>
-        {['Approval', 'Tugas Hari Ini', 'Semua Tugas'].map(t => (
-          <button key={t} className={`filter-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
-            {t}
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="filter-tabs" style={{ margin: 0 }}>
+          {['Approval', 'Tugas Hari Ini', 'Per Bulan', 'Semua Tugas'].map(t => (
+            <button key={t} className={`filter-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {/* Dropdown Bulan — hanya tampil di tab Per Bulan */}
+          {activeTab === 'Per Bulan' && (
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="select-filter"
+            >
+              {monthOptions.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          )}
+          {/* Dropdown Mahasiswa */}
+          <select
+            value={selectedStudent}
+            onChange={e => setSelectedStudent(e.target.value)}
+            className="select-filter"
+          >
+            <option value="Semua">Semua Mahasiswa</option>
+            {students.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

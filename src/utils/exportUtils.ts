@@ -60,7 +60,7 @@ export function printHTML(title: string, bodyHTML: string) {
 </head>
 <body>
   ${bodyHTML}
-  <div class="footer">Dicetak pada: ${new Date().toLocaleString('id-ID')} · SIMAGANG – Diskominfo Humaspendis</div>
+  <div class="footer">Dicetak pada: ${new Date().toLocaleString('id-ID')} · SIMAGANG – Humas Ditjen Pendis Kementerian Agama RI</div>
   <script>window.onload = function(){ window.print(); }<\/script>
 </body>
 </html>`)

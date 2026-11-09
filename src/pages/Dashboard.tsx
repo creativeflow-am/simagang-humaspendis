@@ -107,7 +107,7 @@ export default function Dashboard() {
     printHTML('Laporan Dashboard', `
       <div class="header">
         <h1>LAPORAN REKAPITULASI MAGANG</h1>
-        <p>Diskominfo – Bidang Humaspendis &nbsp;|&nbsp; ${today}</p>
+        <p>Humas Ditjen Pendis Kementerian Agama RI &nbsp;|&nbsp; ${today}</p>
       </div>
       <div class="summary">
         <div class="summary-box"><div class="label">Mahasiswa Aktif</div><div class="value">${students.length}</div></div>
