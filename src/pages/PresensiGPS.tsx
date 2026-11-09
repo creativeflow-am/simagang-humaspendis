@@ -5,6 +5,7 @@ import { db } from '../lib/firebase'
 import { students } from '../store/useAuth'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { toast } from 'sonner'
+import { downloadCSV, printHTML } from '../utils/exportUtils'
 
 const statusBadge: Record<string, string> = {
   'Hadir': 'badge-green',
@@ -93,6 +94,59 @@ export default function PresensiGPS() {
   const totalPulang = displayedRecords.filter(r => r.timeOut !== '-').length
   const totalIzin = displayedRecords.filter(r => r.status === 'Sakit' || r.status === 'Izin').length
 
+  const handleExport = () => {
+    const label = activeTab === 'Hari Ini' ? todayStrDate : 'Semua'
+    const filename = `Rekapitulasi_Presensi_${label}.csv`
+    const headers = ['No', 'Nama Mahasiswa', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status', 'GPS']
+    const rows = displayedRecords.map((r, i) => [
+      [i + 1],
+      [r.name],
+      [r.rawDateStr],
+      [r.timeIn],
+      [r.timeOut],
+      [r.status],
+      [r.gps]
+    ])
+    downloadCSV(filename, headers, rows)
+    toast.success('File CSV berhasil diunduh!')
+  }
+
+  const handlePrint = () => {
+    const label = activeTab === 'Hari Ini' ? `Hari Ini (${todayStrDate})` : 'Semua Data'
+    const rows = displayedRecords.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r.name}</td>
+        <td>${r.rawDateStr}</td>
+        <td>${r.timeIn}</td>
+        <td>${r.timeOut}</td>
+        <td><span class="badge ${r.status === 'Hadir' || r.status === 'WFO' ? 'badge-green' : r.status === 'WFA' ? 'badge-blue' : r.status === 'Sakit' || r.status === 'Izin' ? 'badge-red' : 'badge-orange'}">${r.status}</span></td>
+        <td>${r.gps}</td>
+      </tr>`).join('')
+
+    printHTML('Rekapitulasi Presensi', `
+      <div class="header">
+        <h1>REKAPITULASI PRESENSI MAHASISWA MAGANG</h1>
+        <p>Diskominfo – Bidang Humaspendis</p>
+      </div>
+      <div class="meta">
+        <div><strong>Filter:</strong> ${label}</div>
+        <div><strong>Total Masuk:</strong> ${totalMasuk}</div>
+        <div><strong>Total Pulang:</strong> ${totalPulang}</div>
+        <div><strong>Izin/Sakit:</strong> ${totalIzin}</div>
+        <div><strong>Total Record:</strong> ${displayedRecords.length}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>Nama Mahasiswa</th><th>Tanggal</th>
+            <th>Jam Masuk</th><th>Jam Pulang</th><th>Status</th><th>GPS</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td colspan="7" style="text-align:center">Tidak ada data</td></tr>'}</tbody>
+      </table>`)
+  }
+
   return (
     <Layout role="admin" title="Presensi" subtitle="Rekap kehadiran & GPS">
       <ConfirmModal 
@@ -109,11 +163,11 @@ export default function PresensiGPS() {
           <div className="page-sub">{todayFormatted} · Pencatatan waktu & geolokasi</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={handleExport}>
             <span className="material-symbols-outlined">download</span>
-            Export
+            Export CSV
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={handlePrint}>
             <span className="material-symbols-outlined">print</span>
             Cetak
           </button>

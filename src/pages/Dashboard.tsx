@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { students } from '../store/useAuth'
+import { downloadCSV, printHTML } from '../utils/exportUtils'
 
 const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 const todayStrDate = new Date().toLocaleDateString('en-CA')
@@ -43,6 +44,98 @@ export default function Dashboard() {
   const cat2 = aktivitas.filter(a => a.kategori === 'Pelaksanaan peliputan lembaga').length
   const cat3 = aktivitas.filter(a => a.kategori === 'Pengolahan konten media').length
 
+  const handleExportExcel = () => {
+    // Sheet 1: Rekapitulasi Presensi
+    const presensiHeaders = ['No', 'Nama Mahasiswa', 'Tanggal', 'Jam Masuk', 'Jam Pulang', 'Status', 'GPS']
+    const presensiRows = presensi.map((p, i) => {
+      let tanggal = p.tanggal_str || ''
+      let jamMasuk = '-', jamPulang = '-'
+      if (p.waktu_datang?.toDate) {
+        const d = p.waktu_datang.toDate()
+        if (!tanggal) tanggal = d.toLocaleDateString('en-CA')
+        jamMasuk = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+      } else if (typeof p.waktu_datang === 'string') jamMasuk = p.waktu_datang
+      if (p.waktu_pulang?.toDate) {
+        jamPulang = p.waktu_pulang.toDate().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+      } else if (typeof p.waktu_pulang === 'string') jamPulang = p.waktu_pulang
+      return [[i + 1], [p.nama_mahasiswa || '-'], [tanggal], [jamMasuk], [jamPulang], [p.status || 'Hadir'], [p.lokasi_datang ? 'Sesuai' : '-']]
+    })
+    downloadCSV(`Rekap_Presensi_${todayStrDate}.csv`, presensiHeaders, presensiRows)
+    // Sheet 2: Penugasan — ekspor terpisah
+    setTimeout(() => {
+      const tugasHeaders = ['No', 'Nama Mahasiswa', 'Tanggal', 'Kategori', 'Deskripsi', 'Status']
+      const tugasRows = aktivitas.map((a, i) => {
+        let tgl = ''
+        if (a.tanggal?.toDate) tgl = a.tanggal.toDate().toLocaleDateString('id-ID')
+        else if (typeof a.tanggal === 'string') tgl = new Date(a.tanggal).toLocaleDateString('id-ID')
+        return [[i + 1], [a.nama_mahasiswa || '-'], [tgl], [a.kategori || '-'], [a.deskripsi || '-'], [a.status || '-']]
+      })
+      downloadCSV(`Rekap_Penugasan_${todayStrDate}.csv`, tugasHeaders, tugasRows)
+    }, 500)
+    
+    import('sonner').then(({ toast }) => toast.success('Dua file CSV (Presensi & Penugasan) berhasil diunduh!'))
+  }
+
+  const handlePrintLaporan = () => {
+    const presensiToday2 = presensi.filter(p =>
+      p.tanggal_str === todayStrDate ||
+      (p.waktu_datang && new Date(p.waktu_datang.toDate ? p.waktu_datang.toDate() : p.waktu_datang).toLocaleDateString('en-CA') === todayStrDate)
+    )
+
+    const presensiRows = presensiToday2.map((p, i) => {
+      let jamMasuk = '-', jamPulang = '-'
+      if (p.waktu_datang?.toDate) jamMasuk = p.waktu_datang.toDate().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+      if (p.waktu_pulang?.toDate) jamPulang = p.waktu_pulang.toDate().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${p.nama_mahasiswa || '-'}</td>
+        <td>${jamMasuk}</td>
+        <td>${jamPulang}</td>
+        <td><span class="badge ${p.status === 'Hadir' || p.status === 'WFO' ? 'badge-green' : 'badge-orange'}">${p.status || 'Hadir'}</span></td>
+      </tr>`
+    }).join('')
+
+    const tugasRows = recentActivity.map((a, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${a.name}</td>
+        <td>${a.action}</td>
+        <td>${a.category}</td>
+        <td>${a.time}</td>
+      </tr>`).join('')
+
+    printHTML('Laporan Dashboard', `
+      <div class="header">
+        <h1>LAPORAN REKAPITULASI MAGANG</h1>
+        <p>Diskominfo – Bidang Humaspendis &nbsp;|&nbsp; ${today}</p>
+      </div>
+      <div class="summary">
+        <div class="summary-box"><div class="label">Mahasiswa Aktif</div><div class="value">${students.length}</div></div>
+        <div class="summary-box"><div class="label">Absen Masuk (Hari Ini)</div><div class="value">${masukCount}</div></div>
+        <div class="summary-box"><div class="label">Absen Pulang (Hari Ini)</div><div class="value">${pulangCount}</div></div>
+        <div class="summary-box"><div class="label">Menunggu Approval</div><div class="value" style="color:#d97706">${waitingApproval}</div></div>
+      </div>
+
+      <div style="font-weight:600; font-size:13px; margin:16px 0 8px; color:#1a56db">Presensi Hari Ini</div>
+      <table>
+        <thead><tr><th>No</th><th>Nama</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Status</th></tr></thead>
+        <tbody>${presensiRows || '<tr><td colspan="5" style="text-align:center">Tidak ada data presensi hari ini</td></tr>'}</tbody>
+      </table>
+
+      <div style="font-weight:600; font-size:13px; margin:16px 0 8px; color:#1a56db">5 Aktivitas Laporan Terkini</div>
+      <table>
+        <thead><tr><th>No</th><th>Nama</th><th>Status</th><th>Kategori</th><th>Tanggal</th></tr></thead>
+        <tbody>${tugasRows || '<tr><td colspan="5" style="text-align:center">Belum ada aktivitas</td></tr>'}</tbody>
+      </table>
+
+      <div style="margin-top:16px; font-size:11px; color:#555">
+        <strong>Distribusi Kategori Laporan:</strong>&nbsp;
+        Penyusunan berita media daring: <strong>${cat1}</strong> &nbsp;|&nbsp;
+        Pelaksanaan peliputan: <strong>${cat2}</strong> &nbsp;|&nbsp;
+        Pengolahan konten media: <strong>${cat3}</strong>
+      </div>`)
+  }
+
   const recentActivity = aktivitas.slice(0, 5).map(a => {
     return {
       name: a.nama_mahasiswa || 'Mahasiswa',
@@ -60,11 +153,11 @@ export default function Dashboard() {
           <span style={{ fontSize: 12, color: 'var(--text-light)', marginLeft: 12 }}>Jam Operasional: 07.30–16.00 WIB</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={handleExportExcel}>
             <span className="material-symbols-outlined">download</span>
             Rekap Excel
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={handlePrintLaporan}>
             <span className="material-symbols-outlined">print</span>
             Cetak Laporan
           </button>

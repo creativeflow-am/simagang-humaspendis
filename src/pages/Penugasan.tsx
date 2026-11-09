@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { ConfirmModal } from '../components/ConfirmModal'
+import { downloadCSV, printHTML } from '../utils/exportUtils'
 
 export default function Penugasan() {
   const [activeTab, setActiveTab] = useState('Approval')
@@ -64,6 +65,55 @@ export default function Penugasan() {
   const countHariIni = allTasks.filter(t => t.rawDate === todayRaw).length
   const countSemua = allTasks.length
 
+  const handleExport = () => {
+    const label = activeTab === 'Semua Tugas' ? 'Semua' : activeTab.replace(/ /g, '_')
+    const filename = `Rekapitulasi_Penugasan_${label}.csv`
+    const headers = ['No', 'Nama Mahasiswa', 'Tanggal', 'Kategori', 'Deskripsi', 'Status']
+    const rows = displayedTasks.map((t, i) => [
+      [i + 1],
+      [t.name],
+      [t.date],
+      [t.category],
+      [t.desc],
+      [t.status]
+    ])
+    downloadCSV(filename, headers, rows)
+    toast.success('File CSV berhasil diunduh!')
+  }
+
+  const handlePrint = () => {
+    const rows = displayedTasks.map((t, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${t.name}</td>
+        <td>${t.date}</td>
+        <td>${t.category}</td>
+        <td>${t.desc}</td>
+        <td><span class="badge ${t.status === 'Disetujui' || t.status === 'ACC' ? 'badge-green' : t.status === 'Menunggu' ? 'badge-orange' : 'badge-red'}">${t.status}</span></td>
+      </tr>`).join('')
+
+    printHTML('Rekapitulasi Laporan Penugasan', `
+      <div class="header">
+        <h1>REKAPITULASI LAPORAN PENUGASAN MAGANG</h1>
+        <p>Diskominfo – Bidang Humaspendis</p>
+      </div>
+      <div class="meta">
+        <div><strong>Filter:</strong> ${activeTab}</div>
+        <div><strong>Menunggu Approval:</strong> ${countApproval}</div>
+        <div><strong>Tugas Hari Ini:</strong> ${countHariIni}</div>
+        <div><strong>Total Semua:</strong> ${countSemua}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>Nama Mahasiswa</th><th>Tanggal</th>
+            <th>Kategori</th><th>Deskripsi</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td colspan="6" style="text-align:center">Tidak ada data</td></tr>'}</tbody>
+      </table>`)
+  }
+
   const handleSubmitAction = async (id: string, type: string) => {
     try {
       const taskRef = doc(db, 'aktivitas', id)
@@ -118,6 +168,16 @@ export default function Penugasan() {
         <div>
           <div className="page-title">Approval Laporan</div>
           <div className="page-sub">Menunggu verifikasi Anda</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" onClick={handleExport}>
+            <span className="material-symbols-outlined">download</span>
+            Export CSV
+          </button>
+          <button className="btn btn-primary" onClick={handlePrint}>
+            <span className="material-symbols-outlined">print</span>
+            Cetak
+          </button>
         </div>
       </div>
 
